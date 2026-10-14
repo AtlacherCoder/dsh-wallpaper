@@ -122,6 +122,17 @@
 - **防回归**：①别名必须成对给出 light/dark；②四套配色须覆盖全部别名；③**WCAG 对比度断言**：面板文字对每个栏目色、
   两种模式下 ≥ 4.5:1；④控件必须声明自己的表面。
 
+## D-13 面板层必须靠权重保持点击穿透（一次真实事故）
+
+- **事故**：注册在 `shell.overlay` 的全屏面板层被该槽宿主规则 `.overlayLayer > * { pointer-events: auto }`
+  夺走了 `pointer-events: none`，变成透明全屏挡板，把工作区选择器等控件点死（用户报障，并用「停用壁纸即可复现/消失」的对照实验确认）。
+- **决定**：`.dw-surface` 使用 `pointer-events: none !important`；`.dw-card` 单独 `auto` + `z-index: 1`；
+  并**撤掉** `html.dsh-wallpaper-on body > *:not(#dsh-wallpaper-layer) { position: relative; z-index: 1 }`。
+- **依据**：同权重时后注入的样式表获胜，所以「穿透」必须按**最终生效**来写（权重或结构），不能按自己那行字。
+  而给 `#root` 加 `z-index` 会建层叠上下文，困住应用自己的浮层 —— 壁纸层本来就是 `fixed + z-index: 0`，不需要它。
+- **代价**：多两个 `!important`（有明确注释说明为什么），以及一条被删掉的规则。
+- **防回归**：从**已安装的** DSH 包里读那条宿主规则做锚点 + 3 项断言，见 `CRASH-REVIEW.md` 第 10 节。
+
 ## 未做 / 待定
 
 1. **没有做 Linux 桌面壁纸**（GNOME/KDE）：用户已排除；改的是 DSH 网页背景，不是操作系统桌面。

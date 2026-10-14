@@ -91,6 +91,15 @@ DSH 壁纸插件已做好并**装进 web profile**，功能在真实进程上验
   而它没有 `contents=write` 那样的细粒度替代。诊断靠 `X-Accepted-GitHub-Permissions` 响应头 +
   跨仓库对照探针，不是猜的。见 `docs/HANDOFF.md` 坑清单第 20–21 条。
 
+## 第 10 轮：修「工作区选择器点不开」并重新发布
+
+用户报障：新建对话时工作区选择器点不开；用「停用壁纸即可恢复」的对照实验确认是本插件造成的。
+根因是**两层**：①`shell.overlay` 宿主规则 `.overlayLayer > * { pointer-events: auto }` 把我那层全屏
+面板层的点击穿透夺走，变成透明挡板；②我给 `#root` 加的 `position:relative; z-index:1` 建了层叠上下文，
+困住应用自己的浮层。已分别用 `!important` 与「撤掉该规则」修掉，并加了锚定到已安装 DSH 包的防回归断言。
+提交 `24d07e9` 已推送到 GitHub（增量上传：复用 13 blob / 只传 5 个文本 / 二进制 0 重传），
+18 个文件逐字节核验一致；`dsh-plugin` 标签仍在。详见 `docs/CRASH-REVIEW.md` 第 10 节。
+
 ## 当前状态（实测）
 
 - **已装**：`~/.dsh/profiles/web/package.json` 有 `"dsh-wallpaper": "link:/home/atlaslinux/Wallpaper Plugin/dsh-wallpaper"`，`dsh.profile.bundles` 末位有 `dsh-wallpaper`；`pnpm install` 已建软链。
@@ -141,5 +150,10 @@ DSH 壁纸插件已做好并**装进 web profile**，功能在真实进程上验
 20. **细粒度 token 的 `permissions` 字段会骗人**：`GET /repos/{r}` 里返回 `admin: true`，
     但真正写入仍可能 403 —— 那个字段反映的是**用户**对该仓库的权限，不是 token 被授予的范围。
 21. **打 GitHub topics 必须给仓库级 `Administration: write`**：这个接口没有更细的替代权限。
-22. **停掉卡住的验证实例用 `fuser -k 3099/tcp`**：沙箱内的 `kill` 看不到宿主命名空间的进程，
+22. **注册到别人的槽里，就要假设那一层会给子元素加样式**：`shell.overlay` 的宿主对**所有直接子元素**
+    声明 `pointer-events: auto`。全屏浮层的「点击穿透」必须按**最终生效**来写（`!important` 或改结构），
+    写普通的 `pointer-events: none` 看起来对、实际会被后注入的同权重规则盖掉，症状是「界面点不动」。
+23. **别给 `#root` 加 `z-index`**：那会建层叠上下文，把应用自己 `position: fixed` 的弹层全困住
+    （工作区选择器就是受害者）。壁纸层是 `fixed + z-index: 0`，静态的 `#root` 本来就在它上面。
+24. **停掉卡住的验证实例用 `fuser -k 3099/tcp`**：沙箱内的 `kill` 看不到宿主命名空间的进程，
     而 `pkill -f "dsh web"` 会匹配到自己的 bash 命令行把自己杀掉。
