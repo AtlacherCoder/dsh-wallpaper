@@ -198,20 +198,23 @@ window.__ModuleLoader__.load({
 html.${ON_CLASS} body {
   background: transparent;
 }
-html.${ON_CLASS} body > *:not(#${LAYER_ID}) {
-  position: relative;
-  z-index: 1;
-}
 
 /* ------------------------------------------------------------------ panel */
 .dw-surface {
   position: fixed;
   inset: 0;
   z-index: 40;
-  pointer-events: none;
+  /* The overlay seat's host re-enables pointer events on every direct child
+     (.overlayLayer > * { pointer-events: auto }), which would turn this
+     full-viewport wrapper into a transparent shield: clicks would land on it
+     instead of the app underneath. Beating it needs weight, not a plain none —
+     the shipped rule is injected later and wins on ties. */
+  pointer-events: none !important;
+  user-select: none;
 }
 .dw-card {
   position: absolute;
+  z-index: 1;
   right: 16px;
   bottom: 16px;
   width: min(340px, calc(100vw - 32px));
@@ -225,6 +228,7 @@ html.${ON_CLASS} body > *:not(#${LAYER_ID}) {
   background: var(--dw-card, #101c3a);
   color: var(--dw-ink, #e8eefc);
   box-shadow: 0 22px 56px rgba(0, 0, 0, 0.5), 0 0 0 1px var(--dw-glow, rgba(76,141,255,0.10)) inset;
+  user-select: text;
   font-size: 12px;
   line-height: 1.55;
 }

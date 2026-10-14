@@ -78,6 +78,19 @@ DSH 壁纸插件已做好并**装进 web profile**，功能在真实进程上验
 > 流程缺陷（已修）：此前每轮都把 `docs/rollback/R-001/` 覆盖成当前版本，等于没有回退点。
 > 现在每个回退点独立目录、只增不改。
 
+## 第 9 轮：发布到 GitHub
+
+- **仓库**：https://github.com/AtlacherCoder/dsh-wallpaper （公开，`main`）
+- **提交**：`48bafbc` — 18 个文件，插件 README 按用户选择提到仓库根（覆盖 15 字节占位），
+  **回退快照未上传**（按用户选择）；仓库自带 `LICENSE` 以追加模式保留
+- **标签**：本仓库与 https://github.com/AtlacherCoder/dshgodot-workflow 均已打上 `dsh-plugin`
+- **核验方式**：读回远程 tree，18 个文件的 git blob SHA 与本地 `git hash-object` **逐位一致**
+  （含 322,731 字节的壁纸二进制）；topics 通过回读确认，未轻信写入响应
+- **卡过的坑**：细粒度 token 有两处权限缺口 —— ①新仓库不在 token 的 **Repository access** 白名单里
+  （同一请求对 `dshgodot-workflow` 通过、对新仓库 403）；②打 topics 需要 **Administration: write**，
+  而它没有 `contents=write` 那样的细粒度替代。诊断靠 `X-Accepted-GitHub-Permissions` 响应头 +
+  跨仓库对照探针，不是猜的。见 `docs/HANDOFF.md` 坑清单第 20–21 条。
+
 ## 当前状态（实测）
 
 - **已装**：`~/.dsh/profiles/web/package.json` 有 `"dsh-wallpaper": "link:/home/atlaslinux/Wallpaper Plugin/dsh-wallpaper"`，`dsh.profile.bundles` 末位有 `dsh-wallpaper`；`pnpm install` 已建软链。
@@ -121,5 +134,12 @@ DSH 壁纸插件已做好并**装进 web profile**，功能在真实进程上验
     只给文字上色、把背景留给 UA，就会在某个配色下变成白底浅字（不报错，只是看不清）。
 18. **优先覆盖别名，不要覆盖主题的静态变量**：静态变量由主题自己的规则声明，覆盖它是比样式表顺序，
     可能静默失效；别名覆盖是元素内联属性，必然生效。
-19. **停掉卡住的验证实例用 `fuser -k 3099/tcp`**：沙箱内的 `kill` 看不到宿主命名空间的进程，
+19. **GitHub 写入失败先看 `X-Accepted-GitHub-Permissions` 响应头**：它直接告诉你该接口要什么权限
+    （`POST /git/blobs`、`/git/trees` → `contents=write`；`PUT /topics` → `administration=write`）。
+    再拿同一个请求打另一个仓库做对照 —— 一个 403、一个 422（鉴权过、参数错）= **token 的仓库白名单缺这一项**，
+    不是代码问题、也不是网络问题。
+20. **细粒度 token 的 `permissions` 字段会骗人**：`GET /repos/{r}` 里返回 `admin: true`，
+    但真正写入仍可能 403 —— 那个字段反映的是**用户**对该仓库的权限，不是 token 被授予的范围。
+21. **打 GitHub topics 必须给仓库级 `Administration: write`**：这个接口没有更细的替代权限。
+22. **停掉卡住的验证实例用 `fuser -k 3099/tcp`**：沙箱内的 `kill` 看不到宿主命名空间的进程，
     而 `pkill -f "dsh web"` 会匹配到自己的 bash 命令行把自己杀掉。

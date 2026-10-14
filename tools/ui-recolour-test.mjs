@@ -217,5 +217,33 @@ for (const [index, spec] of hueSpecs.entries()) {
     worst >= 4.5, `worst ${worst.toFixed(2)}:1`)
 }
 
+
+// ---- the overlay seat's own rule, read from the installed shell -------------
+/**
+ * The panel registers in `shell.overlay`, whose host declares
+ * `.overlayLayer > * { pointer-events: auto }`. Reading that rule out of the
+ * installed package is what turns "the plugin must use !important" from a
+ * comment into a checked fact: if the shell ever stops declaring it, this
+ * reports it, and if the plugin drops its weight, the plugin-side check fails.
+ */
+const LAYOUT = process.env.DSH_LAYOUT_BUNDLE
+  ?? '/home/atlaslinux/.nvm/versions/node/v24.21.0/lib/node_modules/@deepseek-ai/dsh/node_modules/@deepseek-ai/dsh-client-ui-layout/lib/client.js'
+const layoutSource = readFileSync(LAYOUT, 'utf8')
+const hostRule = /[^{}]*overlayLayer\s*>\s*\*[^{}]*\{[^}]*\}/.exec(layoutSource)
+check('the shell still force-enables pointer events on overlay children',
+  hostRule !== null && /pointer-events:\s*auto/.test(hostRule[0]),
+  hostRule === null ? 'rule not found (shell changed?)' : hostRule[0].replace(/^[^{]*/, ''))
+
+const pluginCss = (/style\.textContent = `([\s\S]*?)`\n/.exec(readFileSync(CLIENT, 'utf8'))?.[1] ?? '')
+  .replace(/\/\*[\s\S]*?\*\//g, '')
+const pluginSurface = /\.dw-surface\s*\{([^}]*)\}/.exec(pluginCss)?.[1] ?? ''
+const pluginCard = /\.dw-card\s*\{([^}]*)\}/.exec(pluginCss)?.[1] ?? ''
+check('the plugin neutralises that rule on its wrapper',
+  /pointer-events:\s*none\s*!important/.test(pluginSurface),
+  pluginSurface.match(/pointer-events:[^;]*/)?.[0] ?? 'none declared')
+check('and re-enables clicks only on the panel card',
+  /pointer-events:\s*auto/.test(pluginCard),
+  pluginCard.match(/pointer-events:[^;]*/)?.[0] ?? 'none declared')
+
 console.log(failures.length === 0 ? '\nSURFACES RECOLOUR CORRECTLY' : `\nFAILURES: ${failures.join(', ')}`)
 process.exit(failures.length === 0 ? 0 : 1)

@@ -101,20 +101,22 @@ dsh plugin --profile web add link:"/home/atlaslinux/Wallpaper Plugin/dsh-wallpap
 ## 验证
 
 ```bash
-node tools/host-smoke.mjs        # 宿主接口端到端 28 项断言（真实 HTTP + 真实壁纸字节）
-node tools/usage-fold-test.mjs 4 # 用量折叠/计价 与 会话日志原样重算逐字段比对
-node tools/client-syntax-check.mjs
+node tools/client-syntax-check.mjs  # 浏览器半契约 56 项（含点击穿透、配色覆盖）
+node tools/host-smoke.mjs           # 宿主接口端到端 36 项（真实 HTTP + 真实壁纸字节）
+node tools/ui-recolour-test.mjs     # 配色：读已安装主题的别名绑定，验证四套 × 深浅模式
+node tools/usage-fold-test.mjs 4    # 用量折叠 与 会话日志原样重算逐字段比对（--disk 走磁盘路径）
+node tools/crash-test.mjs           # 崩溃面：8 类恶意客户端，16 项
 ```
 
 `usage-fold-test.mjs` 用一份**独立的**实现重新折叠真实会话日志，要求与插件逐字段一致 —— 这是「面板上的数字不是编的」的证据。
 `crash-test.mjs` 在子进程里用 8 类恶意客户端打真实插件，把「未处理拒绝 / 未捕获异常」变成退出码。
 
-## 目录
+## 仓库结构
 
 ```
-README.md               # 本文件：安装、功能、验证方式
-INSTALL.md              # 安装/卸载/回退步骤（逐条可复制）
-dsh-wallpaper/          # 插件本体：把这一层挂进 profile 即可
+README.md               # 本文件：功能、配色、验证方式
+INSTALL.md              # 安装 / 卸载 / 回退步骤（可直接复制）
+dsh-wallpaper/          # 插件本体 —— 把这一层挂进 profile
   package.json          #   dsh.bundle.patch + dsh.client（web）
   cordis.patch.yml      #   一行 insert，把自己挂进 profile
   lib/index.js          #   宿主半：路由 / 存储 / 用量折叠
@@ -124,20 +126,20 @@ tools/                  # 五个验证脚本（见上）
 docs/                   # 决策日志、崩溃面审查、验证清单、回退点说明
 ```
 
-## 安装（最短路径）
+## 安装
 
 ```bash
 dsh plugin --profile web add link:/path/to/this/repo/dsh-wallpaper
 ```
 
-装完重启 `dsh web`。细节与卸载方式见 [INSTALL.md](INSTALL.md)。
+装完重启 `dsh web`。卸载与回退见 [INSTALL.md](INSTALL.md)。
 
 ## 本轮验证读数
 
 | 验证 | 命令 | 结果 |
 |---|---|---|
-| 客户端契约 | `node tools/client-syntax-check.mjs` | 53 项全过 |
+| 浏览器半契约 | `node tools/client-syntax-check.mjs` | **56 项**全过（含「面板层必须保持点击穿透」这条 —— 它防的是一次真实事故：注册在 `shell.overlay` 时被宿主规则 `pointer-events: auto` 变成全屏挡板，把工作区选择器等控件点死） |
 | 宿主接口（真实 HTTP） | `node tools/host-smoke.mjs` | 36 项全过 |
-| 配色专项（四套 × 深/浅） | `node tools/ui-recolour-test.mjs` | 全过，含 WCAG 对比度 |
+| 配色专项（四套 × 深/浅） | `node tools/ui-recolour-test.mjs` | 全过，含 WCAG 对比度；并把「宿主确实会给 overlay 子元素开 pointer-events」这条**从已安装的 DSH 包里读出来**做锚点 |
 | 用量折叠（内存 / 磁盘） | `node tools/usage-fold-test.mjs [--disk]` | 与真实会话日志逐字段一致 |
 | 崩溃面（8 类恶意客户端） | `node tools/crash-test.mjs` | 16 项全过，无崩溃向量 |

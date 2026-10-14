@@ -449,6 +449,35 @@ check('the stacked layer covers the surface palette the columns use', missingRam
 check('each scheme is declared by a hue and a saturation ceiling', (source.match(/hue: \d+, saturation: [\d.]+/g) ?? []).length === 4,
   `${(source.match(/hue: \d+, saturation: [\d.]+/g) ?? []).length} schemes`)
 
+/**
+ * The overlay seat's host re-enables pointer events on every direct child
+ * (`.overlayLayer > * { pointer-events: auto }`). This panel registers there, so
+ * its full-viewport wrapper stops being click-through and becomes a transparent
+ * shield: clicks land on it instead of the UI underneath, and nothing happens.
+ *
+ * That shipped rule wins on equal specificity simply by being injected later, so
+ * the plugin must beat it by weight — and the check below is weight-sensitive on
+ * purpose, because a plain `pointer-events: none` here reads correct and is not.
+ */
+// Braces inside CSS comments (a rule quoted in prose, for instance) would cut a
+// naive `{...}` match short, so the commented text is removed first.
+const styleCode = styleText.replace(/\/\*[\s\S]*?\*\//g, '')
+const surfaceRule = /\.dw-surface\s*\{([^}]*)\}/.exec(styleCode)?.[1] ?? ''
+const surfaceDeclares = (value) => new RegExp(`pointer-events:\\s*${value}\\s*!important`).test(surfaceRule)
+check('the panel wrapper stays click-through even against the overlay host rule',
+  surfaceDeclares('none'), surfaceRule.match(/pointer-events:[^;]*/)?.[0] ?? 'none declared')
+check('the panel card itself re-enables clicks',
+  new RegExp('\\.dw-card\\s*\\{[^}]*pointer-events:\\s*auto').test(styleCode))
+
+/**
+ * A z-index on #root would make it a stacking context and trap every popover the
+ * app opens inside it — the workspace picker among them. The wallpaper layer is
+ * fixed at z-index 0, so the app needs no help stacking above it.
+ */
+check('the plugin does not put the app root into a stacking context',
+  !/body\s*>\s*\*[^{]*\{[^}]*z-index/.test(styleCode),
+  /body\s*>\s*\*[^{]*\{[^}]*\}/.exec(styleCode)?.[0]?.slice(0, 80) ?? 'no body-child rule')
+
 check('the wallpaper is no longer colour-washed', !source.includes('mix-blend-mode') && !source.includes('dw-tint'))
 
 console.log(failures.length === 0 ? '\nALL CLIENT CHECKS PASSED' : `\nFAILURES: ${failures.join(', ')}`)
