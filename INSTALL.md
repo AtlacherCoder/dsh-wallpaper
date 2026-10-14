@@ -39,3 +39,22 @@ cd ~/.dsh/profiles/web && pnpm install
 
 写 `~/.dsh/profiles/web/**` 在工作区沙箱（workspace-write）之外，会以「Read-only file system」
 被拒。执行这一步需要放宽一次文件沙箱（danger-full-access），或者在普通终端里跑上面那条命令。
+
+## 发布到 GitHub（仓库首页 README 的权威副本在哪）
+
+仓库 https://github.com/AtlacherCoder/dsh-wallpaper 的**根级 `README.md`** 与工作区里的
+`dsh-wallpaper/README.md` 是**同一份内容**：发布时把它放到仓库根（覆盖最初的 15 字节占位）。
+所以该文件的权威副本是 `dsh-wallpaper/README.md`，不要在两个位置各维护一份。
+
+发布步骤（暂存目录，避免动工作区）：
+
+```bash
+STAGE=/tmp/dsh-wallpaper-upload; rm -rf "$STAGE"; mkdir -p "$STAGE"
+for i in dsh-wallpaper tools docs INSTALL.md; do cp -a "$i" "$STAGE/"; done
+rm -rf "$STAGE/docs/rollback"          # 回退快照不上传（按用户选择）
+mv "$STAGE/dsh-wallpaper/README.md" "$STAGE/README.md"
+# 然后 gitmanager_upload(source=$STAGE, repo=AtlacherCoder/dsh-wallpaper)
+```
+
+> 教训：这个 README 曾在「临时目录」里被改好却没落回源文件，导致下一次上传**内容倒退**。
+> 现在源文件是权威副本，暂存只是搬运。
