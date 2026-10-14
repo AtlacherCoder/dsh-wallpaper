@@ -1,0 +1,46 @@
+{
+  "name": "dsh-wallpaper",
+  "version": "1.0.0",
+  "description": "DSH 壁纸插件：把整个 DSH 网页铺上壁纸（内置一张，可上传更换、调暗度/模糊/填充方式），并在同一面板里显示本次会话的 token 用量与按 DeepSeek 官方价目估算的消费。Wallpaper + per-session token/cost panel for the DeepSeek Harness web GUI.",
+  "type": "module",
+  "main": "lib/index.js",
+  "exports": {
+    ".": "./lib/index.js",
+    "./client": "./lib/client.js",
+    "./cordis.patch.yml": "./cordis.patch.yml",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "lib",
+    "assets",
+    "cordis.patch.yml",
+    "README.md"
+  ],
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web",
+      "inject": []
+    }
+  },
+  "keywords": [
+    "dsh",
+    "dsh-plugin",
+    "deepseek-harness",
+    "wallpaper",
+    "background",
+    "usage",
+    "token",
+    "cost",
+    "主题",
+    "壁纸",
+    "用量",
+    "消费"
+  ],
+  "license": "MIT",
+  "engines": {
+    "node": ">=20"
+  }
+}

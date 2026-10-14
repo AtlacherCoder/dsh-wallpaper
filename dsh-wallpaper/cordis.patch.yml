@@ -1,0 +1,5 @@
+# dsh-wallpaper bundle layer: inserts this plugin into a profile's layer stack.
+# Install with: dsh plugin --profile web add link:/home/atlaslinux/Wallpaper\ Plugin/dsh-wallpaper
+- insert:
+    - id: dsh-wallpaper
+      name: 'dsh-wallpaper'
